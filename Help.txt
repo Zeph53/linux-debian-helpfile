@@ -1,0 +1,432 @@
+#
+## This is my help file for Debian. Includes script functions as well as
+## a random assortment of commands or hints.
+## I guess it could be referred to as a "cheat sheet".
+## Hopefully, I will be able to organize it all into a usable format.
+
+
+#
+## Bash related
+#
+## Create a executable bash script (or any sh)
+Empty text-file.bash with first line #!/bin/bash
+#
+## My custom system wide bash prompt in /etc/bash.bashrc
+PS1="\${debian_chroot:+(\$debian_chroot)}\[\033[37m\]\t \[\033[32m\]\u\[\033[32m\]@\[\033[32m\]\h\[\033[37m\]\w\[\033[37m\]\\$\[\033[37m\] "
+#
+## Execute shell scripts by default in Thunar
+xfconf-query --channel thunar --property /misc-exec-shell-scripts-by-default --create --type bool --set TRUE
+#
+## Running a command after another
+a || b - run b if a fails
+a && b - run b if a succeeds
+a | b  - run a/b with a/b
+a ; b  - run a and then b
+a & b  - run a and then b
+#
+## A basic calculator for BASH. Too bad it's not included anymore...
+bc
+#
+## A built in calculator for bash
+## - + / \*
+expr 10 + 10
+#
+## Can also calculate with python3
+## - + / *
+python3
+#
+## Can also calculate with xcalc
+xcalc
+#
+## Create an X megabyte swap file.
+dd if=/dev/zero of=/swap bs=1M count=X
+mkswap /swap
+chmod 600 /swap
+swapon /swap
+echo '
+/swap swap swap defaults 0 0
+' >> /etc/fstab
+swapon -a
+#
+## Enable root autologin
+sed -i 's/#autologin-user=/autologin-user=root/g' /etc/lightdm/lightdm.conf
+sed -i 's/#autologin-user-timeout=/autologin-user-timeout=0/g' /etc/lightdm/lightdm.conf
+sed -i 's/root/anything/g' /etc/pam.d/lightdm-autologin
+#
+## Disable root autologin
+sed -i 's/autologin-user=root/#autologin-user=/g' /etc/lightdm/lightdm.conf
+sed -i 's/autologin-user-timeout=0/#autologin-user-timeout=/g' /etc/lightdm/lightdm.conf
+sed -i 's/anything/root/g' /etc/pam.d/lightdm-autologin
+#
+## Grab the parent folder a script is in, within the script
+export DIR="$(dirname "$(readlink -f "$0")")"
+
+
+#
+## Zenity related
+## One liner for LIST menu generation with "$ANSWER"
+MENU=\
+($(echo "$(grep '"$ANSWER" = ' $0 | grep -v 'MENU=')" | \
+awk -F ' ' '{print $5}' | sed -z 's/"//g')) ;
+#
+## List with menu
+ANSWER=`zenity --list --column='' --hide-header --height 500 "${MENU[@]}"` ;
+#
+## Answers for list entries
+if [ "$ANSWER" = "ITEM1" ]; then
+    command ;
+fi
+
+
+#
+## XFCE related
+#
+## Correctly creating a xfce4 panel launcher as it stupidly doesn't pass to bash by default
+bash -i -c 'command'
+#
+## Open new terminal window and run command. works best with above
+xfce4-terminal --execute bash -i -c 'command' 
+#
+## Reload panel settings and plugins
+xfce4-panel --restart
+#
+## QT scaling variable for oversized interfaces
+QT_AUTO_SCREEN_SCALE_FACTOR=0 command
+#
+## Libinput options from /usr/share/X11/xorg.conf.d/40-libinput.conf
+        Option "AccelProfile" "flat"
+        Option "AccelSpeed" "1.0"
+#
+## Libinput custom touchpad buttons
+        Option "ClickMethod" "buttonareas"
+        Option "MiddleEmulation" "true"
+        Option "ScrollMethod" "edge"
+        Option "DisableWhileTyping" "false"
+        Option "Tapping" "on"
+        Option "TappingDragLock" "true"
+#
+## Adjust SWAP usage
+echo '
+vm.swappiness = 10
+' >> /etc/sysctl.conf
+
+
+#
+## APT related
+#
+## Fix broken dependencies with APT
+apt --fix-broken install
+#
+## Forcing architectures in sources.list
+deb [arch=amd64] http
+#
+## My APT update/upgrade script
+xfce4-terminal --execute bash -i -c 'cd $HOME && apt update && sleep 1 | echo Wait && apt full-upgrade && sleep 1 | echo Done && bash'
+#
+## In the case of forgetting to save it, here is my newest APT update/upgrade scripts
+xfce4-terminal --execute bash -i -c 'cd $HOME ; sleep 1 | printf "\nStarting update...\n" ; apt update ; sleep 1 | printf "Done update!\n" ; printf "\nListing upgradable packages...\n" ; apt list --upgradable ; read -s -r -t 30 -p "Press enter/return to continue or wait 30 seconds..." ; sleep 1 | printf "\nContinuing...\n" ; printf "\nStarting upgrade...\n" ; dpkg --configure -a ; apt full-upgrade -y ; sleep 1 | printf "Done upgrade!\n" ; printf "\n" ; read -s -r -t 30 -p "Press enter/return to revert to default shell or wait 30 seconds for exit..." && $SHELL | printf "\nReverting to default shell...\n\n" || sleep 3 | printf "\nExiting..." ; exit'
+#
+## Upgraded version of above
+xfce4-terminal --execute bash -i -c 'cd $HOME ; sleep 1 | printf "\nStarting update...\n" ; apt update ; sleep 1 | printf "Done update!\n" ; printf "\nListing upgradable packages...\n" ; apt list --upgradable ; read -s -r -t 30 -p "Press enter/return to continue or wait 30 seconds..." ; sleep 1 | printf "\nContinuing...\n" ; printf "\nStarting upgrade...\n" ; apt --fix-broken install -y ; dpkg --configure -a ; APT_LISTCHANGES_FRONTEND=none apt full-upgrade -y ; apt-mark minimize-manual -y ; sleep 1 | printf "Done upgrade!\n" ; printf "\n" ; read -s -r -t 30 -p "Press enter/return to revert to default shell or wait 30 seconds for exit..." && $SHELL | printf "\nReverting to default shell...\n\n" || sleep 3 | printf "\nExiting..." ; exit'
+#
+## Manually installing .deb packages
+extract deb > usr > share > program > ./program
+copy to same dir create links
+#
+## Old way to install PGP keys
+wget -O - 'https://packages.microsoft.com/keys/microsoft.asc' | apt-key add -
+#
+## New way to install PGP keys
+wget -qO- 'URL' | tee /etc/apt/trusted.gpg.d/trusted.gpg
+wget -qO- 'URL' | gpg --dearmor | tee -a /etc/apt/trusted.gpg.d/trusted.gpg
+wget -q -O - 'URL' | tee -a /etc/apt/trusted.gpg.d/trusted.gpg
+#
+## Install GPG from keyserver
+gpg --no-default-keyring --keyring '/etc/apt/trusted.gpg.d/trusted.gpg' --keyserver 'URL' --recv-keys 'KEYCODE'
+#
+## List trusted PGP keys
+gpg --no-default-keyring --keyring '/etc/apt/trusted.gpg' --list-keys
+
+
+#
+## Wine related
+#
+## Force Wine to use a specific architecture and prefix folder
+## Use with every Wine command
+WINEARCH=win32 WINEPREFIX=/root/.win32 wine 
+WINEARCH=win64 WINEPREFIX=/root/.win64 wine 
+#
+## Commands to use with above
+winecfg
+winetricks
+ninewinecfg
+#
+## Disable error reporting in Wine to improve performance
+WINEDEBUG=fixme-all,err-all,warn-all,trace-all winecmd
+#
+## Remove all logging and show FPS in Wine (maybe)
+WINEDEBUG=-all,+fps winecmd
+#
+## DXVK FPS counter for wine
+DXVK_HUD=fps,frametimes
+#
+## Custom wine command
+DXVK_HUD=fps WINEDEBUG=-all WINEARCH=win32 WINEPREFIX=/root/.win32 wine
+#
+## Initial Wine setup script
+WINEARCH=win32 WINEPREFIX=/media/Multimedia/WineFiles/.win32 winetricks --force dotnet472 dotnet462
+WINEARCH=win32 WINEPREFIX=/media/Multimedia/WineFiles/.win32 winetricks --force vcrun2005 vcrun2008 vcrun2010 vcrun2012 vcrun2013 vcrun2019
+WINEARCH=win32 WINEPREFIX=/media/Multimedia/WineFiles/.win32 winetricks --force d3dx9 d3dx10 d3dx10_43 d3dx11_43 directplay dkvk galliumnine vulkanrt
+#
+## Generate BASH script according to whats applied in Lutris
+lutris -b /folder/game.bash kerbal-space-program
+
+
+#
+## Usefull directory locations
+#
+## APT .deb package folder
+/var/cache/apt/archives
+
+
+#
+## Fixes for random problems
+#
+## In case of massive CUPSD CPU usage
+rm /etc/cups/ppd/*
+rm /etc/cups/printers.*
+rm /etc/cups/subscriptions.*
+#
+## Set VLC to run as root
+sed -i 's/geteuid/getppid/' /usr/bin/vlc
+#
+## In case of can't start Insurgency (or more)
+## Make file hidden with .
+## Use Steam Linux Compatability
+## /media/Multimedia/Games/Steam/steamapps/common/insurgency2//bin/libgcc_s.so.1
+gio trash --force "~/.steam/steam/steamapps/common/insurgency2/bin/libgcc_s.so.1"
+#
+## Disable flat volume in Pulseaudio
+sed -i 's/flat-volumes = yes/flat-volumes = no/g' /etc/pulse/daemon.conf
+
+
+#
+## User/Groups control
+#
+## Add user and set group
+adduser --ingroup users0 username0
+#
+## Delete user
+deluser --remove USERNAME
+#
+## Set username's group to sudo
+usermod -aG sudo username
+#
+## List members of sudo group
+getent group sudo
+#
+## File Permissions
+## u=user g=group o=other a=all
+## u=rwx,g=rx,o=r myfile
+## r=read w=write x=execute
+## 4=read 2=write 1=execute 0=none
+## 7 is the combination of permissions 4+2+1 (read, write, and execute)
+## 5 is 4+0+1 (read, no write, and execute)
+## 4 is 4+0+0 (read, no write, and no execute)
+chmod 754 myfile
+
+
+#
+## Custom Actions for Thunar
+#
+## ~/.config/Thunar/uca.xml
+## 1=Directories - 4=Text Files
+## 2=Audio Files - 5=Video Files
+## 3=Image Files - 6=Other Files
+#
+## Open Terminal Here
+## Example for a custom action
+xfce4-terminal --working-directory %f -x bash -i
+* - 1
+#
+## Mount ISO
+## Mount selected ISO
+mkdir %n.mnt ; sleep 1 ; mount %n %n.mnt
+*.iso;*.ISO - 6
+#
+## Unmount ISO
+## Unmount selected ISO
+umount %n.mnt ; sleep 1 ; rm -r %n.mnt
+*.iso;*.ISO - 6
+#
+## Mount SquashFS
+## Mount selected squashfs in current folder
+mkdir %n.mnt ; sleep 1 ; mount -o loop -t squashfs %n %n.mnt
+*.squashfs - 6
+#
+## Unmount SquashFS
+## Unmount selected squashfs file
+umount %n.mnt ; sleep 1 ; rm -r %n.mnt
+*.squashfs - 6
+#
+## Create Symlink
+## Create a symbolic link
+ln -s %f %n.symlink
+* - 1 2 3 4 5 6
+#
+## Create Hardlink
+## Creates a hardlink
+ln %f %n.link
+* 1 2 3 4 5 6
+#
+## Execute Script
+## Executes the selected script
+bash -i -c cd %d ; ./%n ; exit
+*.sh;*.bash - 6
+#
+## Execute script (In a Terminal)
+## Opens a terminal and executes the selected script file
+xfce4-terminal --working-directory %d --title %n -x bash -i -c ./%n
+*.sh;*.bash - 6
+#
+## Install .Deb Package
+## Install selected .deb package
+xfce4-terminal -x bash -i -c 'dpkg -i %f ; read -s -p "Press enter to exit" ; exit'
+*.deb - 6
+#
+## Execute Jar
+## Execute selected .JAR file
+java -jar %f
+*.jar - 6
+#
+## Search for file
+## Search for a file/folder within a selected folder
+catfish --hidden --path=%f
+* - 1
+#
+## Execute as User
+## Executes the selected file with normal user rights
+adduser --system --group users --no-create-home --gecos --disabled-password --disabled-login user ; sudo --preserve-env --user user %f ; exit
+* - 4 6
+#
+## Execute as User (In Terminal)
+## Opens a termnal and executes the selected file with normal user rights
+xfce4-terminal -x bash -i -c 'adduser --home $HOME --quiet --no-create-home --gecos --disabled-password --disabled-login --group users user ; su --preserve-environment user --command "%f" ; $SHELL'
+* - 4 6
+#
+## Dump Cabinet
+## Dump cabinet into current directory
+cabextract --directory %f.extract %f
+*.cab;*.exe;*.msi;*CAB;*.EXE;*.MSI;*.dll.*;* - 6
+
+
+#
+## GitHub Controls
+#
+## Automatically login
+echo '#
+machine github.com
+       login USERNAME
+       password AUTHKEY
+' > '~.netrc'
+#
+## Create a new repository on the command line
+echo "# xfwm-gtk3-debian-teal-theme" >> README.md
+git init
+git add *
+git commit -m "commit"
+git branch -M main
+git remote add origin https://github.com/Zeph53/xfwm-gtk3-debian-teal-theme.git
+git push -u origin main
+#
+## Or push an existing repository from the command line
+git remote add origin https://github.com/Zeph53/xfwm-gtk3-debian-teal-theme.git
+git branch -M main
+git push -u origin main
+#
+##
+git add * ; git commit -m "commit" ; git remote add origin https://github.com/Zeph53/xfwm-gtk3-debian-teal-theme.git ; git branch -M main ; git push -u origin main
+#
+## Delete GitHub tag remotely and locally
+git tag -d TAGNAME
+git push --delete origin TAGNAME
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+## Kali
+#
+## Wifi passwords with air-ng
+airmon-ng check kill
+airmon-ng start mon0
+airodump-ng mon0
+airodump-ng -c channel --bssid MAC -w /root/Desktop/wificap/cap.cap mon0
+cap2hccapx.bin /root/Desktop/wificap/cap.cap /root/Desktop/wificap/cap.hccapx
+aircrack-ng -a 2 -b MAC -w /root/Desktop/wordlist/list.txt /root/Desktop/wificap/cap.cap
+#
+## Force a WPA handshake
+airodump-ng -c channel --bssid MAC
+aireplay-ng -0 2 -a MAC1 -c MAC2 mon0
+#
+## Using hashcat for gpu acceleration
+airmon-ng check kill
+airmon-ng start mon0
+hcxdumptool -i wlan1mon -o /root/Desktop/hcxdump/cap.pcapng --enable__status=1
+hcxpcaptool -E /root/Desktop/essidlist -I /root/Desktop/identitylist -U /root/Desktop/usernamelist -z /root/Desktop/hcxdump/cap.16800 /root/Desktop/hcxdump/cap.pcapng
+hashcat -m 16800 /root/Desktop/hcxdump/cap.16800 -a 0 --kernel-accel=1 -w 4 --force /root/Desktop/wordlist/list.txt
+#
+## Forcefully use tor with proxychains
+tor | proxychains firefox-esr
+proxychains > random_chain chain_len = 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+## GTK3 stuff
+#
+## 
+.view:selected:focus, .view:selected, .view text:selected:focus, textview text:selected:focus, .view text:selected, textview text:selected, .view text selection:focus, .view text selection, textview text selection:focus, textview text selection, iconview:selected:focus, iconview:selected, iconview text selection:focus, iconview text selection, flowbox flowboxchild:selected, entry selection, modelbutton.flat:selected, .menuitem.button.flat:selected, spinbutton:not(.vertical) selection, treeview.view:selected:focus, treeview.view:selected, row:selected, calendar:selected {
+  background-color: #01a495; 
+  }
+  .view:selected:focus:backdrop, .view:selected:backdrop, .view text:selected:focus:backdrop, textview text:selected:focus:backdrop, .view text:selected:backdrop, textview text:selected:backdrop, .view text selection:focus:backdrop, .view text selection:backdrop, textview text selection:focus:backdrop, textview text selection:backdrop, iconview:selected:focus:backdrop, iconview:selected:backdrop, iconview text selection:focus:backdrop, iconview text selection:backdrop, flowbox flowboxchild:selected:backdrop, entry selection:backdrop, modelbutton.flat:selected:backdrop, .menuitem.button.flat:selected:backdrop, spinbutton:not(.vertical) selection:backdrop, treeview.view:selected:focus:backdrop, treeview.view:selected:backdrop, row:selected:backdrop, calendar:selected:backdrop {
+    background-color: #323643; 
+    }
+    label:selected, .selection-mode button.titlebutton, .view:selected:focus, .view:selected, .view text:selected:focus, textview text:selected:focus, .view text:selected, textview text:selected, .view text selection:focus, .view text selection, textview text selection:focus, textview text selection, iconview:selected:focus, iconview:selected, iconview text selection:focus, iconview text selection, flowbox flowboxchild:selected, entry selection, modelbutton.flat:selected, .menuitem.button.flat:selected, spinbutton:not(.vertical) selection, treeview.view:selected:focus, treeview.view:selected, row:selected, calendar:selected {
+      color: #000000; 
+      }
+      label:disabled selection, label:disabled:selected, .selection-mode button.titlebutton:disabled, .view:disabled:selected, textview text:disabled:selected:focus, .view text:disabled:selected, textview text:disabled:selected, .view text selection:disabled, textview text selection:disabled:focus, textview text selection:disabled, iconview:disabled:selected:focus, iconview:disabled:selected, iconview text selection:disabled:focus, iconview text selection:disabled, flowbox flowboxchild:disabled:selected, entry selection:disabled, modelbutton.flat:disabled:selected, .menuitem.button.flat:disabled:selected, spinbutton:not(.vertical) selection:disabled, treeview.view:disabled:selected, row:disabled:selected, calendar:disabled:selected {
+        color: #01524b; 
+        }
+        filechooser placessidebar.sidebar row.sidebar-row:selected:backdrop, .nautilus-window placessidebar.sidebar row.sidebar-row:selected:backdrop, label:backdrop selection, label:backdrop:selected, .selection-mode button.titlebutton:backdrop, .view:backdrop:selected, textview text:backdrop:selected:focus, .view text:backdrop:selected, textview text:backdrop:selected, .view text selection:backdrop, textview text selection:backdrop:focus, textview text selection:backdrop, iconview:backdrop:selected:focus, iconview:backdrop:selected, iconview text selection:backdrop:focus, iconview text selection:backdrop, flowbox flowboxchild:backdrop:selected, entry selection:backdrop, modelbutton.flat:backdrop:selected, .menuitem.button.flat:backdrop:selected, spinbutton:not(.vertical) selection:backdrop, treeview.view:backdrop:selected, row:backdrop:selected, calendar:backdrop:selected {
+          color: #000000; 
+          }
+          filechooser placessidebar.sidebar row.sidebar-row:disabled:selected:backdrop, .nautilus-window placessidebar.sidebar row.sidebar-row:disabled:selected:backdrop, label:backdrop selection:disabled, label:backdrop:disabled:selected, .selection-mode button.titlebutton:backdrop:disabled, .view:backdrop:disabled:selected, .view text:backdrop:disabled:selected, textview text:backdrop:disabled:selected, .view text selection:backdrop:disabled, textview text selection:backdrop:disabled, iconview:backdrop:disabled:selected, iconview text selection:backdrop:disabled, flowbox flowboxchild:backdrop:disabled:selected, entry selection:backdrop:disabled, modelbutton.flat:backdrop:disabled:selected, .menuitem.button.flat:backdrop:disabled:selected, spinbutton:not(.vertical) selection:backdrop:disabled, row:backdrop:disabled:selected, calendar:backdrop:disabled:selected {
+            color: #40b3a9; 
+            }
+
+
+
+
